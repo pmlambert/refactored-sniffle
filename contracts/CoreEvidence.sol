@@ -8,12 +8,21 @@ import "./interfaces/POHEvidence.sol";
     Receives Proof of Humanity submissions by delegates.
  */
 contract CoreEvidence is POHEvidence, Ownable {
-    mapping(address => ProofOfHumanity) public proofs;
+    struct DelegatedProofOfHumanity {
+        uint64 timestamp;
+        address delegate;
+        bytes32 evidence;
+    }
+
+    mapping(address => DelegatedProofOfHumanity[]) public proofs;
 
     mapping(address => bool) authorizedDelegates;
 
     modifier onlyAuthorizedDelegate(address delegate) {
-        require(authorizedDelegates[delegate], "Delegate isn't authorized.");
+        require(
+            _msgSender() == delegate && authorizedDelegates[delegate],
+            "Delegate isn't authorized."
+        );
         _;
     }
 
@@ -34,18 +43,12 @@ contract CoreEvidence is POHEvidence, Ownable {
      */
     function submitEvidence(
         address _address,
-        uint256 _timestamp,
+        uint64 _timestamp,
         address _delegate,
-        bytes calldata _evidence
-    )
-        external
-        override
-        onlyAuthorizedDelegate(_msgSender() & submission.delegate)
-    {
-        proofs[keccak256(evidence)] = ProofOfHumanity(
-            _address,
-            _timestamp,
-            _delegate
+        bytes32 _evidence
+    ) external override onlyAuthorizedDelegate(_delegate) {
+        proofs[_address].push(
+            DelegatedProofOfHumanity(_timestamp, _delegate, _evidence)
         );
     }
 }
